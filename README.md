@@ -203,3 +203,9 @@ Use `forceImageMode: true` for consistent font appearance regardless of text con
 **Image quality is poor:**
 - Ensure source image has sufficient resolution
 - Use `width: 384` for 58mm paper, `width: 576` for 80mm paper
+
+## Support
+
+If you find this library useful, consider buying me a coffee!
+
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/hoangnh0099)
