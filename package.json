@@ -1,5 +1,5 @@
 {
-  "name": "react-native-thermal-printer",
+  "name": "@hoangnh0099/react-native-thermal-printer",
   "version": "0.1.0",
   "description": "This is the new thermal-printer",
   "main": "./lib/module/index.js",
