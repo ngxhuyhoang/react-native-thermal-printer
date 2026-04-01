@@ -145,9 +145,7 @@
       "tagName": "v${version}"
     },
     "npm": {
-      "publish": true,
-      "access": "public",
-      "skipChecks": true
+      "publish": true
     },
     "github": {
       "release": true
