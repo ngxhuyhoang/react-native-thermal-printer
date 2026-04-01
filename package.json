@@ -129,6 +129,9 @@
     "modulePathIgnorePatterns": [
       "<rootDir>/example/node_modules",
       "<rootDir>/lib/"
+    ],
+    "testPathIgnorePatterns": [
+      "<rootDir>/__tests__/mocks/"
     ]
   },
   "commitlint": {
