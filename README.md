@@ -1,8 +1,8 @@
 # react-native-thermal-printer
 
-[![npm version](https://img.shields.io/npm/v/react-native-thermal-printer.svg)](https://www.npmjs.com/package/react-native-thermal-printer)
-[![npm downloads](https://img.shields.io/npm/dm/react-native-thermal-printer.svg)](https://www.npmjs.com/package/react-native-thermal-printer)
-[![license](https://img.shields.io/npm/l/react-native-thermal-printer.svg)](https://github.com/nicekid1/react-native-thermal-printer/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@hoangnh0099/react-native-thermal-printer.svg)](https://www.npmjs.com/package/@hoangnh0099/react-native-thermal-printer)
+[![npm downloads](https://img.shields.io/npm/dm/@hoangnh0099/react-native-thermal-printer.svg)](https://www.npmjs.com/package/@hoangnh0099/react-native-thermal-printer)
+[![license](https://img.shields.io/npm/l/@hoangnh0099/react-native-thermal-printer.svg)](https://github.com/nicekid1/react-native-thermal-printer/blob/main/LICENSE)
 [![platform](https://img.shields.io/badge/platform-iOS%20%7C%20Android-lightgrey.svg)](https://reactnative.dev)
 
 ESC/POS thermal printer library for React Native. Supports text, images, barcodes, QR codes, and Vietnamese text via WiFi/Network connection.
