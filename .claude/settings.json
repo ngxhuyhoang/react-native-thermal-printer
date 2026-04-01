@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git commit)"
+    ]
+  },
+  "model": "opus",
+  "enabledPlugins": {
+    "code-review@claude-plugins-official": true,
+    "superpowers@claude-plugins-official": true
+  },
+  "effortLevel": "high"
+}

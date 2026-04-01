@@ -1,5 +1,12 @@
-import ThermalPrinter from './NativeThermalPrinter';
-
-export function multiply(a: number, b: number): number {
-  return ThermalPrinter.multiply(a, b);
-}
+export { ThermalPrinter } from './ThermalPrinter';
+export { PrinterError } from './types';
+export type {
+  PrinterConfig,
+  PrinterState,
+  PrinterErrorCode,
+  TextOptions,
+  QROptions,
+  BarcodeOptions,
+  ImageOptions,
+  CutType,
+} from './types';
