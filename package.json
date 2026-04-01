@@ -56,7 +56,8 @@
   },
   "homepage": "https://github.com/ngxhuyhoang/react-native-thermal-printer#readme",
   "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^19.8.1",
