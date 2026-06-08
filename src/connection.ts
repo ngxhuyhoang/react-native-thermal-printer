@@ -9,6 +9,11 @@ export interface ConnectionConfig {
   autoReconnect: boolean;
   retryInterval: number;
   maxRetries: number;
+  /**
+   * Invoked after a successful auto-reconnect, so the caller can re-initialize
+   * the printer (the transport layer itself is command-agnostic).
+   */
+  onReconnect?: () => void | Promise<void>;
 }
 
 type StateListener = (state: PrinterState) => void;
@@ -166,6 +171,12 @@ export class Connection {
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxRetries) {
       this.setState('disconnected');
+      this.emitError(
+        new PrinterError(
+          'CONNECTION_LOST',
+          `Reconnect failed after ${this.config.maxRetries} attempts`
+        )
+      );
       return;
     }
     this.reconnectTimer = setTimeout(async () => {
@@ -178,6 +189,15 @@ export class Connection {
         );
         this.setState('connected');
         this.reconnectAttempts = 0;
+        // Re-initialize the printer so its state matches a fresh connection.
+        if (this.config.onReconnect) {
+          try {
+            await this.config.onReconnect();
+          } catch {
+            // onReconnect sends through send(), which already surfaces its own
+            // errors and retriggers reconnect; swallow to avoid double-handling.
+          }
+        }
       } catch {
         this.scheduleReconnect();
       }

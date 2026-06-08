@@ -35,6 +35,7 @@ export class ThermalPrinter {
       autoReconnect: config.autoReconnect ?? true,
       retryInterval: config.retryInterval ?? DEFAULT_RETRY_INTERVAL,
       maxRetries: config.maxRetries ?? DEFAULT_MAX_RETRIES,
+      onReconnect: () => this.connection.send(commands.initialize()),
     };
     this.connection = new Connection(connConfig);
   }

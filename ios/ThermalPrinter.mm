@@ -2,6 +2,11 @@
 #import <sys/socket.h>
 #import <netinet/in.h>
 #import <arpa/inet.h>
+#import <netdb.h>
+#import <fcntl.h>
+#import <poll.h>
+#import <errno.h>
+#import <string.h>
 #import <UIKit/UIKit.h>
 #import <CoreText/CoreText.h>
 
@@ -29,36 +34,99 @@
   dispatch_async(_socketQueue, ^{
     [self closeSocket];
 
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
-      reject(@"CONNECT_ERROR", @"Failed to create socket", nil);
+    int timeoutMs = (int)timeout;
+
+    // Resolve the host. Unlike inet_pton, getaddrinfo supports hostnames,
+    // mDNS (.local) names and IPv6 in addition to dotted-decimal IPv4.
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    NSString *portString = [NSString stringWithFormat:@"%d", (int)port];
+    struct addrinfo *results = NULL;
+    int status = getaddrinfo([host UTF8String], [portString UTF8String], &hints, &results);
+    if (status != 0 || results == NULL) {
+      reject(@"CONNECT_ERROR",
+             [NSString stringWithFormat:@"Failed to resolve %@: %s", host, gai_strerror(status)],
+             nil);
       return;
     }
 
+    int sock = -1;
+    NSString *lastError = nil;
+
+    for (struct addrinfo *ai = results; ai != NULL; ai = ai->ai_next) {
+      int fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+      if (fd < 0) {
+        lastError = [NSString stringWithFormat:@"socket(): %s", strerror(errno)];
+        continue;
+      }
+
+      // Connect non-blocking so the timeout is actually enforced. A blocking
+      // connect() would ignore SO_SNDTIMEO and hang on the kernel TCP timeout
+      // (~75s) when the printer is powered off or unreachable.
+      int flags = fcntl(fd, F_GETFL, 0);
+      fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+
+      int rc = connect(fd, ai->ai_addr, ai->ai_addrlen);
+      if (rc < 0 && errno != EINPROGRESS) {
+        lastError = [NSString stringWithFormat:@"connect(): %s", strerror(errno)];
+        close(fd);
+        continue;
+      }
+
+      if (rc < 0) {
+        // Wait up to timeoutMs for the connection to complete.
+        struct pollfd pfd;
+        pfd.fd = fd;
+        pfd.events = POLLOUT;
+        int pr = poll(&pfd, 1, timeoutMs);
+        if (pr == 0) {
+          lastError = @"connection timed out";
+          close(fd);
+          continue;
+        }
+        if (pr < 0) {
+          lastError = [NSString stringWithFormat:@"poll(): %s", strerror(errno)];
+          close(fd);
+          continue;
+        }
+
+        // poll() reported the socket is writable; confirm there was no error.
+        int soError = 0;
+        socklen_t len = sizeof(soError);
+        if (getsockopt(fd, SOL_SOCKET, SO_ERROR, &soError, &len) < 0 || soError != 0) {
+          lastError = [NSString stringWithFormat:@"connect(): %s",
+                       strerror(soError != 0 ? soError : errno)];
+          close(fd);
+          continue;
+        }
+      }
+
+      // Connected. Restore blocking mode for the subsequent send loop.
+      fcntl(fd, F_SETFL, flags);
+      sock = fd;
+      break;
+    }
+
+    freeaddrinfo(results);
+
+    if (sock < 0) {
+      reject(@"CONNECT_ERROR",
+             [NSString stringWithFormat:@"Failed to connect to %@:%d: %@",
+              host, (int)port, lastError ?: @"unknown error"],
+             nil);
+      return;
+    }
+
+    // Apply send/receive timeouts for the subsequent blocking I/O.
     struct timeval tv;
-    int timeoutMs = (int)timeout;
     tv.tv_sec = timeoutMs / 1000;
     tv.tv_usec = (timeoutMs % 1000) * 1000;
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-
-    struct sockaddr_in addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sin_family = AF_INET;
-    addr.sin_port = htons((uint16_t)port);
-
-    if (inet_pton(AF_INET, [host UTF8String], &addr.sin_addr) <= 0) {
-      close(sock);
-      reject(@"CONNECT_ERROR", [NSString stringWithFormat:@"Invalid address: %@", host], nil);
-      return;
-    }
-
-    if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-      close(sock);
-      reject(@"CONNECT_ERROR",
-             [NSString stringWithFormat:@"Failed to connect to %@:%d", host, (int)port], nil);
-      return;
-    }
 
     self->_socketFD = sock;
     self->_isConnected = YES;
